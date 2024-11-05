@@ -1,0 +1,14 @@
+[Unit]
+Description=grafana-server
+After=network.target
+
+[Service]
+User=root
+Group=root
+Type=simple
+ExecStart=/usr/bin/grafana-server
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

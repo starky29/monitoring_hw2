@@ -1,0 +1,179 @@
+---
+- name: Install Prometheus
+  hosts: prometheus
+  # vars:
+  #   promet_version: "2.55.0"
+  handlers:
+    - name: Start prometheus service
+      become: true
+      ansible.builtin.service:
+        name: prometheus service
+        state: restarted
+        daemon_reload: true
+  tasks:
+    - name: Install Prometheus | Get prometeus distrib
+      ansible.builtin.get_url:
+        url: "https://github.com/prometheus/prometheus/releases/download/v{{ promet_version }}/prometheus-{{ promet_version }}.linux-amd64.tar.gz"
+        dest: "/tmp/prometheus.tar.gz"
+        mode: "0777"
+    - name: Install Prometheus | Creat dir
+      become: true
+      ansible.builtin.file:
+        path: /etc/prometheus
+        state: directory
+        mode: "0644"
+    - name: Install Prometheus | Unzip prometeus
+      become: true
+      ansible.builtin.unarchive:
+        src: "/tmp/prometheus.tar.gz"
+        dest: /tmp
+        mode: "0644"
+        remote_src: true
+    - name: Install Prometheus | copy prometheus consoles
+      become: true
+      ansible.builtin.copy:
+        src: /tmp/prometheus-{{ promet_version }}.linux-amd64/consoles/
+        dest: /etc/prometheus/consoles/
+        owner: root
+        group: root
+        mode: '0644'
+        remote_src: true
+    - name: Install Prometheus | copy prometheus console_libraries
+      become: true
+      ansible.builtin.copy:
+        src: /tmp/prometheus-{{ promet_version }}.linux-amd64/console_libraries/
+        dest: /etc/prometheus/console_libraries/
+        owner: root
+        group: root
+        mode: '0644'
+        remote_src: true
+    - name: Install Prometheus | copy prometheus
+      become: true
+      ansible.builtin.copy:
+        src: /tmp/prometheus-{{ promet_version }}.linux-amd64/prometheus
+        dest: /usr/bin/prometheus
+        owner: root
+        group: root
+        mode: 'a+x'
+        remote_src: true
+    - name: Install Prometheus | copy promtool
+      become: true
+      ansible.builtin.copy:
+        src: /tmp/prometheus-{{ promet_version }}.linux-amd64/promtool
+        dest: /usr/bin/promtool
+        owner: root
+        group: root
+        mode: 'a+x'
+        remote_src: true
+    - name: Install Prometheus | config prometheus
+      become: true
+      ansible.builtin.template:
+        src: prometheus.yml.j2
+        dest: /etc/prometheus/prometheus.yml
+        owner: root
+        group: root
+        mode: '0644'
+    - name: Install Prometeus | prometheus service
+      become: true
+      ansible.builtin.template:
+        src: prometheus.service.j2
+        dest: /etc/systemd/system/prometheus.service
+        owner: root
+        group: root
+        mode: '0644'
+      notify: Start prometheus service
+
+
+- name: Install Grafana
+  hosts: grafana
+  handlers:
+    - name: Start grafana-server service
+      become: true
+      ansible.builtin.service:
+        name: grafana-server.service
+        state: restarted
+        daemon_reload: true
+  tasks:
+    - name: Install Grafana | Get grafana-server
+      ansible.builtin.get_url:
+        url: "https://dl.grafana.com/oss/release/grafana-{{ grafana_version }}-1.x86_64.rpm"
+        dest: "/tmp/grafana.rpm"
+        mode: "0777"
+    - name: Install Grafana | Install rpm
+      become: true
+      ansible.builtin.yum:
+        name: /tmp/grafana.rpm
+        disable_gpg_check: true
+        state: present
+      notify: Start grafana-server service
+    # - name: Install Grafana | Get grafana-server
+    #   ansible.builtin.get_url:
+    #     url: "https://dl.grafana.com/oss/release/grafana-{{ grafana_version }}.linux-amd64.tar.gz"
+    #     dest: "/tmp/grafana.tar.gz"
+    #     mode: "0777"
+    # - name: Install Grafana | Unzip grafana-server
+    #   become: true
+    #   ansible.builtin.unarchive:
+    #     src: "/tmp/grafana.tar.gz"
+    #     dest: /tmp
+    #     mode: "0644"
+    #     remote_src: true
+    # - name: Install Grafana | Copy grafana-server
+    #   become: true
+    #   ansible.builtin.copy:
+    #     src: /tmp/grafana-v{{ grafana_version }}/bin/grafana-server
+    #     dest: /usr/bin/grafana-server
+    #     owner: root
+    #     group: root
+    #     mode: 'a+x'
+    #     remote_src: true
+    # - name: Install Grafana | grafana-server service
+    #   become: true
+    #   ansible.builtin.template:
+    #     src: grafana-server.service.j2
+    #     dest: /etc/systemd/system/grafana-server.service
+    #     owner: root
+    #     group: root
+    #     mode: '0644'
+    #   notify: Start grafana-server service
+
+- name: Install node-exporter
+  hosts: node-exporter
+  handlers:
+    - name: Start node_exporter service
+      become: true
+      ansible.builtin.service:
+        name: node_exporter.service
+        state: restarted
+        daemon_reload: true
+  tasks:
+    - name: Install node-exporter | Get node-exporter
+      ansible.builtin.get_url:
+        url: "https://github.com/prometheus/node_exporter/releases/download/v{{ exporter_version }}/node_exporter-{{ exporter_version }}.linux-amd64.tar.gz"
+        dest: "/tmp/node_exporter.tar.gz"
+        mode: "0777"
+    - name: Install node-exporter  | Unzip node-exporter
+      become: true
+      ansible.builtin.unarchive:
+        src: "/tmp/node_exporter.tar.gz"
+        dest: /tmp
+        mode: "0644"
+        remote_src: true
+    - name: Install node-exporter  | Copy node-exporter
+      become: true
+      ansible.builtin.copy:
+        src: /tmp/node_exporter-{{ exporter_version }}.linux-amd64/node_exporter
+        dest: /usr/bin/node_exporter
+        owner: root
+        group: root
+        mode: 'a+x'
+        remote_src: true
+    - name: Install node-exporter | node_exporter service
+      become: true
+      ansible.builtin.template:
+        src: node_exporter.service.j2
+        dest: /etc/systemd/system/node_exporter.service
+        owner: root
+        group: root
+        mode: '0644'
+      notify: Start node_exporter service
